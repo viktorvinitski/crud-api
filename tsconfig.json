@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "target": "es6",
+    "sourceMap": true,
+    "outDir": "dist",
+    "rootDir": "./src",
+    "noImplicitAny": true,
+    "resolveJsonModule": true,
+    "allowImportingTsExtensions": true,
+    "emitDeclarationOnly": true,
+    "declaration": true,
+    "composite": true
+  },
+  "lib": ["es2020"],
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "dist"]
+}
