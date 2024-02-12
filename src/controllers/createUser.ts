@@ -1,7 +1,8 @@
 import { TUser } from "../models/models";
 import { IncomingMessage, ServerResponse } from "http";
 import { v4 as uuid } from "uuid";
-import { invalidRequestBodyHandler } from "../helpers";
+import { invalidRequestBodyHandler, updateCluster } from "../helpers";
+import cluster from "cluster";
 
 type TParams = {
     req: IncomingMessage;
@@ -29,7 +30,12 @@ export const createUserController = ({ req, res, users }: TParams) => {
             hobbies,
         };
 
-        users.push(newUser);
+        if (!cluster.isWorker) {
+            users.push(newUser);
+        } else {
+            const updatedUsers = [...users, newUser]
+            updateCluster(updatedUsers);
+        }
 
         res.writeHead(201, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify(newUser));

@@ -1,7 +1,8 @@
 import { TUser } from "../models/models";
 import { IncomingMessage, ServerResponse } from "http";
-import { invalidRequestBodyHandler, invalidUserIdHandler, nonexistentUserHandler } from "../helpers";
+import { invalidRequestBodyHandler, invalidUserIdHandler, nonexistentUserHandler, updateCluster } from "../helpers";
 import { validate } from "uuid";
+import cluster from "cluster";
 
 type TParams = {
     req: IncomingMessage;
@@ -42,7 +43,12 @@ export const updateUserController = ({ req, res, users, userId }: TParams) => {
             hobbies,
         };
 
-        users[userIndex] = updatedUser;
+        if (!cluster.isWorker) {
+            users[userIndex] = updatedUser;
+        } else {
+            const updatedUsers = users.map(user => updatedUser.id === user.id ? updatedUser : user)
+            updateCluster(updatedUsers);
+        }
 
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify(updatedUser));

@@ -2,12 +2,11 @@ import { createServer, IncomingMessage, ServerResponse } from 'http';
 import { config } from 'dotenv';
 import { requestsHandler } from "./routes";
 import { errorHandler } from "./helpers";
-import { TUser } from "./models/models";
+import { users } from "./db";
 
 config();
 
 const PORT = process.env.PORT;
-const users: TUser[] = [];
 
 export const server = createServer((req: IncomingMessage, res: ServerResponse) => {
     try {

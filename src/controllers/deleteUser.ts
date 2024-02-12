@@ -1,7 +1,8 @@
 import { TUser } from "../models/models";
 import { ServerResponse } from "http";
-import { invalidUserIdHandler, nonexistentUserHandler } from "../helpers";
+import { invalidUserIdHandler, nonexistentUserHandler, updateCluster } from "../helpers";
 import { validate } from "uuid";
+import cluster from "cluster";
 
 type TParams = {
     res: ServerResponse;
@@ -22,7 +23,12 @@ export const deleteUserController = ({ res, users, userId }: TParams) => {
         return;
     }
 
-    users.splice(userIndex, 1);
+    if (!cluster.isWorker) {
+        users.splice(userIndex, 1);
+    } else {
+        const updatedUsers = users.filter((user, index) => index !== userIndex)
+        updateCluster(updatedUsers);
+    }
 
     res.writeHead(204);
     res.end();

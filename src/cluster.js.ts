@@ -1,45 +1,61 @@
 import { createServer, IncomingMessage, ServerResponse } from 'http';
-import { config } from 'dotenv';
 import { errorHandler } from "./helpers";
-import cluster, { Worker } from 'cluster';
+import cluster from 'cluster';
 import os from 'os'
 import { requestsHandler } from "./routes";
-import { initLoadBalancer } from "./loadBalancer";
+import { proxyRequest, updateDb } from "./helpers";
 import { TUser } from "./models/models";
+import { users } from "./db";
+import {config} from "dotenv";
 
 config();
 
 const PORT = Number(process.env.PORT_MULTI);
 const numCPUs = os.cpus().length;
-const users: TUser[] = [];
-
-const server = createServer((req: IncomingMessage, res: ServerResponse) => {
-    try {
-        requestsHandler(req, res, users);
-    } catch (error) {
-        errorHandler(res, error);
-    }
-});
 
 if (cluster.isPrimary) {
-    const workers: Worker[] = [];
+  for (let i = 0; i < numCPUs; i++) {
+    const worker = cluster.fork({ PORT_FOR_WORKER: `${PORT + i + 1}` });
+  }
 
-    for (let i = 1; i <= numCPUs; i++) {
-        const childWorker = cluster.fork({ HOST: 'localhost', PORT: PORT + i });
-
-        workers.push(childWorker);
-        childWorker.on('message', (data) => {
-            workers.forEach((worker) => worker.send(data));
-        });
-    }
-
-    cluster.on('exit', (worker, code) => {
-        console.log(`Worker ${worker.id} died. Exit code: ${code}`);
+  Object.values(cluster.workers).forEach((worker) => {
+    worker.on("message", (msg) => {
+      if (msg.type === "updateUsers") {
+        Object.values(cluster.workers).forEach((worker) => worker?.send(msg));
+      }
     });
+  });
 
-    initLoadBalancer(PORT);
+  const workerPorts = [...Array(numCPUs).keys()].map((i) => PORT + i + 1);
+  let roundRobinIndex = 0;
+  const proxyServer = createServer((req, res) => {
+    const workerPort = workerPorts[roundRobinIndex++ % numCPUs];
+    proxyRequest(workerPort, req, res);
+  });
+
+  proxyServer.listen(PORT, () => {
+    console.log(`Balancer is running on port ${PORT}`);
+  });
 } else {
-    server.listen(PORT + cluster.worker.id, () => {
-        console.log(`Worker ${process.pid} is listening on http://localhost:${PORT + cluster.worker.id}`);
-    });
+  const port = +process.env.PORT_FOR_WORKER;
+  if (port) {
+      const server = createServer((req: IncomingMessage, res: ServerResponse) => {
+          try {
+              requestsHandler(req, res, users);
+          } catch (error) {
+              errorHandler(res, error);
+          }
+      });
+      server.listen(port, () => {
+          console.log(`Worker ${process.pid} started on port ${port}`);
+      });
+  }
+
+  process.on("message", (msg) => {
+    const { type } = msg as { type: string };
+    if (type === "updateUsers") {
+      const { data } = msg as { data: TUser[] };
+        updateDb(data);
+    }
+  });
 }
