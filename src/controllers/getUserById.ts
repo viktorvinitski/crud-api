@@ -1,25 +1,24 @@
 import { TUser } from "../models/models";
 import { ServerResponse } from "http";
+import { invalidUserIdHandler, nonexistentUserHandler } from "../helpers";
 import { validate } from "uuid";
 
 type TParams = {
     res: ServerResponse;
-    userId: string;
     users: TUser[];
+    userId: string;
 }
 
 export const getUserByIdController = ({ res, userId, users }: TParams) => {
     if (!validate(userId)) {
-        res.writeHead(400, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ message: 'Invalid userId format' }));
+        invalidUserIdHandler(res)
         return;
     }
 
     const user = users.find((u) => u.id === userId);
 
     if (!user) {
-        res.writeHead(404, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ message: 'User not found' }));
+        nonexistentUserHandler(res)
         return;
     }
 

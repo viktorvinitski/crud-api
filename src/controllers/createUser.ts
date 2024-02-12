@@ -1,6 +1,7 @@
 import { TUser } from "../models/models";
 import { IncomingMessage, ServerResponse } from "http";
 import { v4 as uuid } from "uuid";
+import { invalidRequestBodyHandler } from "../helpers";
 
 type TParams = {
     req: IncomingMessage;
@@ -17,8 +18,7 @@ export const createUserController = ({ req, res, users }: TParams) => {
         const { username, age, hobbies } = JSON.parse(body);
 
         if (!username || !age || !Array.isArray(hobbies)) {
-            res.writeHead(400, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ message: 'Invalid request body' }));
+            invalidRequestBodyHandler(res);
             return;
         }
 

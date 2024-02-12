@@ -1,5 +1,6 @@
 import { TUser } from "../models/models";
 import { ServerResponse } from "http";
+import { invalidUserIdHandler, nonexistentUserHandler } from "../helpers";
 import { validate } from "uuid";
 
 type TParams = {
@@ -10,16 +11,14 @@ type TParams = {
 
 export const deleteUserController = ({ res, users, userId }: TParams) => {
     if (!validate(userId)) {
-        res.writeHead(400, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ message: 'Invalid userId format' }));
+        invalidUserIdHandler(res)
         return;
     }
 
     const userIndex = users.findIndex((u) => u.id === userId);
 
     if (userIndex === -1) {
-        res.writeHead(404, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ message: 'User not found' }));
+        nonexistentUserHandler(res)
         return;
     }
 
