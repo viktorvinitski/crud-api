@@ -7,7 +7,7 @@ import { TUser } from "./models/models";
 config();
 
 const PORT = process.env.PORT;
-const users: TUser[] = []
+const users: TUser[] = [];
 
 export const server = createServer((req: IncomingMessage, res: ServerResponse) => {
     try {

@@ -1,48 +1,45 @@
 import { createServer, IncomingMessage, ServerResponse } from 'http';
 import { config } from 'dotenv';
 import { errorHandler } from "./helpers";
-import cluster from 'cluster';
-import { availableParallelism } from 'os'
+import cluster, { Worker } from 'cluster';
+import os from 'os'
 import { requestsHandler } from "./routes";
+import { initLoadBalancer } from "./loadBalancer";
 import { TUser } from "./models/models";
 
 config();
 
-const PORT = process.env.PORT_MULTI;
-const numCPUs = availableParallelism();
-const users: TUser[] = []
+const PORT = Number(process.env.PORT_MULTI);
+const numCPUs = os.cpus().length;
+const users: TUser[] = [];
 
-if (cluster.isMaster) {
-    console.log(`Master ${process.pid} is running`);
+const server = createServer((req: IncomingMessage, res: ServerResponse) => {
+    try {
+        requestsHandler(req, res, users);
+    } catch (error) {
+        errorHandler(res, error);
+    }
+});
 
-    for (let i = 0; i < numCPUs - 1; i++) {
-        const worker = cluster.fork();
+if (cluster.isPrimary) {
+    const workers: Worker[] = [];
 
-        worker.on('message', (message) => {
-            console.log(message);
-            if (message && message.users) {
-                users.length = 0;
-                users.push(...message.users);
-            }
+    for (let i = 1; i <= numCPUs; i++) {
+        const childWorker = cluster.fork({ HOST: 'localhost', PORT: PORT + i });
+
+        workers.push(childWorker);
+        childWorker.on('message', (data) => {
+            workers.forEach((worker) => worker.send(data));
         });
     }
 
-    cluster.on('exit', (worker) => {
-        console.log(`Worker ${worker.process.pid} died`);
-        cluster.fork();
-    });
-} else {
-    const server = createServer((req: IncomingMessage, res: ServerResponse) => {
-        try {
-            requestsHandler(req, res, users);
-        } catch (error) {
-            errorHandler(res, error);
-        }
+    cluster.on('exit', (worker, code) => {
+        console.log(`Worker ${worker.id} died. Exit code: ${code}`);
     });
 
+    initLoadBalancer(PORT);
+} else {
     server.listen(PORT + cluster.worker.id, () => {
         console.log(`Worker ${process.pid} is listening on http://localhost:${PORT + cluster.worker.id}`);
     });
-
-    process.send({ users });
 }
