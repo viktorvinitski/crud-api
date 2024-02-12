@@ -16,9 +16,9 @@ export const requestsHandler = (req: IncomingMessage, res: ServerResponse, users
     const { pathname } = parse(url!, false);
     const userId = pathname.replace(path, '');
 
-    if (pathname === path && method === Request.GET) {
+    if (pathname === BASE_URL && method === Request.GET) {
         getUsersController({ res, users });
-    } else if (pathname === path && method === Request.POST) {
+    } else if (pathname === BASE_URL && method === Request.POST) {
         createUserController({ req, res, users });
     } else if (pathname === `${path}${userId}` && method === Request.GET) {
         getUserByIdController({ res, userId, users });
