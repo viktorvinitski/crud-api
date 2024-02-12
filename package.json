@@ -7,7 +7,7 @@
     "start:prod": "npm run build && node dist/bundle.js",
     "build": "webpack",
     "test": "jest --silent",
-    "start:multi": "nodemon --exec ts-node cluster.js"
+    "start:multi": "nodemon --exec ts-node src/cluster.js"
   },
   "devDependencies": {
     "@types/jest": "^29.5.12",
