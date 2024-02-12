@@ -33,14 +33,14 @@ npm run start:prod
 #### Get all users
 
 ```
-method: get
+method: GET
 address: http://localhost:3000/api/users
 ```
 
 #### Add one user
 
 ```
-method: post
+method: POST
 address: http://localhost:3000/api/users
 body: {
     "username": "test",
@@ -49,28 +49,28 @@ body: {
 }
 ```
 
-#### Get user
+#### Get user by id
 
 ```
-method: get
+method: GET
 address: http://localhost:3000/api/users/${userID}
 ```
 
 #### Update user
 
 ```
-method: put
+method: PUT
 address: http://localhost:3000/api/users/${userID}
 body: {
-    "username": "test name2",
+    "username": "test2",
     "age": 100,
-    "hobbies": ["chess"]
+    "hobbies": ["football", "ski"]
 }
 ```
 
 #### Delete user
 
 ```
-method: delete
+method: DELETE
 address: http://localhost:3000/api/users/${userID}
 ```
